@@ -1,6 +1,29 @@
 #include <ctype.h>
 #include <stdio.h>
+#include <string.h>
 
+typedef struct {
+  unsigned long lines;
+  unsigned long words;
+  unsigned long bytes;
+} Counts;
+
+static void count_stream(FILE *f, Counts *out) {
+  int c, in_word = 0;
+  memset(out, 0, sizeof *out);
+  while ((c = getc(f)) != EOF) {
+    out->bytes++;
+    if (c == '\n') {
+      out->lines++;
+    }
+    if (isspace(c)) {
+      in_word = 0;
+    } else if (!in_word) {
+      in_word = 1;
+      out->words++;
+    }
+  }
+}
 int main(int argc, char **argv) {
   if (argc < 2) {
     fprintf(stderr, "usage: %s file\n", argv[0]);
@@ -13,29 +36,11 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  unsigned long bytes = 0;
-  int c;
-  unsigned long lines = 0;
-  unsigned long words = 0;
-  int in_word = 0;
-
-  while ((c = getc(file)) != EOF) {
-    if (c == '\n') {
-      lines++;
-    }
-
-    if (isspace(c)) {
-      in_word = 0;
-    } else if (!in_word) {
-      in_word = 1;
-      words++;
-    }
-
-    bytes++;
-  }
+  Counts c;
+  count_stream(file, &c);
   fclose(file);
-  printf("%lu %s\n", bytes, argv[1]);
-  printf("lines: %lu \n", lines);
-  printf("words: %lu \n", words);
+  printf("bytes: %lu \n", c.bytes);
+  printf("lines: %lu \n", c.lines);
+  printf("words: %lu \n", c.words);
   return 0;
 }
