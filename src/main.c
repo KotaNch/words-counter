@@ -8,6 +8,10 @@ typedef struct {
   unsigned long bytes;
 } Counts;
 
+typedef struct {
+  int lines, words, bytes;
+} Flags;
+
 static void count_stream(FILE *f, Counts *out) {
   int c, in_word = 0;
   memset(out, 0, sizeof *out);
@@ -25,25 +29,52 @@ static void count_stream(FILE *f, Counts *out) {
   }
 }
 
-static void print_counts(const Counts *c, const char *name) {
-  printf("bytes: %lu \n", c->bytes);
-  printf("lines: %lu \n", c->lines);
-  printf("words: %lu \n", c->words);
+static void print_counts(const Counts *c, const Flags *fl, const char *name) {
+  if (fl->bytes)
+    printf("bytes: %lu \n", c->bytes);
+  if (fl->lines)
+    printf("lines: %lu \n", c->lines);
+  if (fl->words)
+    printf("words: %lu \n", c->words);
   if (name) {
-    printf("%s", name);
-    putchar('\n');
+    printf("%s\n", name);
   }
 }
+
 int main(int argc, char **argv) {
+  Flags fl = {0, 0, 0};
+  int i = 1;
+  for (; i < argc && argv[i][0] == '-' && argv[i][1]; i++) {
+    for (const char *p = argv[i] + 1; *p; p++) {
+      switch (*p) {
+      case 'l':
+        fl.lines = 1;
+        break;
+      case 'w':
+        fl.words = 1;
+        break;
+      case 'c':
+        fl.bytes = 1;
+        break;
+      default:
+        fprintf(stderr, "usage: %s [-lwc] [file...]\n", argv[0]);
+        return 1;
+      }
+    }
+  }
+  if (!fl.lines && !fl.words && !fl.bytes) {
+    fl.lines = fl.words = fl.bytes = 1;
+  }
   Counts total = {0, 0, 0};
   int status = 0;
-  if (argc < 2) {
+  int files = 0;
+  if (i >= argc) {
     Counts c;
     count_stream(stdin, &c);
-    print_counts(&c, NULL);
+    print_counts(&c, &fl, NULL);
     return 0;
   }
-  for (int i = 1; i < argc; i++) {
+  for (; i < argc; i++) {
     FILE *file = fopen(argv[i], "rb");
     if (file == NULL) {
       perror(argv[i]);
@@ -54,13 +85,14 @@ int main(int argc, char **argv) {
     Counts c;
     count_stream(file, &c);
     fclose(file);
-    print_counts(&c, argv[i]);
+    print_counts(&c, &fl, argv[i]);
     total.lines += c.lines;
     total.words += c.words;
     total.bytes += c.bytes;
+    files++;
   }
-  if (argc > 2) {
-    print_counts(&total, "total");
+  if (files > 1) {
+    print_counts(&total, &fl, "total");
   }
   return status;
 }
