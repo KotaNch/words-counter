@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stdio.h>
 
 int main(int argc, char **argv) {
@@ -15,15 +16,26 @@ int main(int argc, char **argv) {
   unsigned long bytes = 0;
   int c;
   unsigned long lines = 0;
+  unsigned long words = 0;
+  int in_word = 0;
 
   while ((c = getc(file)) != EOF) {
     if (c == '\n') {
       lines++;
     }
+
+    if (isspace(c)) {
+      in_word = 0;
+    } else if (!in_word) {
+      in_word = 1;
+      words++;
+    }
+
     bytes++;
   }
   fclose(file);
   printf("%lu %s\n", bytes, argv[1]);
   printf("lines: %lu \n", lines);
+  printf("words: %lu \n", words);
   return 0;
 }
