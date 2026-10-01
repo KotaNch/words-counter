@@ -14,10 +14,16 @@ int main(int argc, char **argv) {
 
   unsigned long bytes = 0;
   int c;
+  unsigned long lines = 0;
+
   while ((c = getc(file)) != EOF) {
+    if (c == '\n') {
+      lines++;
+    }
     bytes++;
   }
   fclose(file);
   printf("%lu %s\n", bytes, argv[1]);
+  printf("lines: %lu \n", lines);
   return 0;
 }
