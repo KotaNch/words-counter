@@ -43,23 +43,27 @@ static void print_counts(const Counts *c, const Flags *fl, const char *name) {
 
 int main(int argc, char **argv) {
   Flags fl = {0, 0, 0};
-  int i = 1;
-  for (; i < argc && argv[i][0] == '-' && argv[i][1]; i++) {
-    for (const char *p = argv[i] + 1; *p; p++) {
-      switch (*p) {
-      case 'l':
-        fl.lines = 1;
-        break;
-      case 'w':
-        fl.words = 1;
-        break;
-      case 'c':
-        fl.bytes = 1;
-        break;
-      default:
-        fprintf(stderr, "usage: %s [-lwc] [file...]\n", argv[0]);
-        return 1;
+  int nfiles = 0;
+  for (int i = 1; i < argc; i++) {
+    if (argv[i][0] == '-' && argv[i][1]) {
+      for (const char *p = argv[i] + 1; *p; p++) {
+        switch (*p) {
+        case 'l':
+          fl.lines = 1;
+          break;
+        case 'w':
+          fl.words = 1;
+          break;
+        case 'c':
+          fl.bytes = 1;
+          break;
+        default:
+          fprintf(stderr, "usage: %s [-lwc] [file...]\n", argv[0]);
+          return 1;
+        }
       }
+    } else {
+      nfiles++;
     }
   }
   if (!fl.lines && !fl.words && !fl.bytes) {
@@ -68,13 +72,16 @@ int main(int argc, char **argv) {
   Counts total = {0, 0, 0};
   int status = 0;
   int files = 0;
-  if (i >= argc) {
+  if (nfiles == 0) {
     Counts c;
     count_stream(stdin, &c);
     print_counts(&c, &fl, NULL);
     return 0;
   }
-  for (; i < argc; i++) {
+  for (int i = 1; i < argc; i++) {
+    if (argv[i][0] == '-' && argv[i][1]) {
+      continue;
+    }
     FILE *file = fopen(argv[i], "rb");
     if (file == NULL) {
       perror(argv[i]);
